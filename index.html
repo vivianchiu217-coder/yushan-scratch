@@ -1,0 +1,822 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>雨山刮刮樂</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --ink:#d7e6ff;
+      --muted:#9fb3d1;
+      --accent:#86c5ff;
+      --danger:#ffcc66;
+      --border:rgba(255,255,255,.08);
+    }
+    body{
+      margin:0; font-family: system-ui, -apple-system, "Noto Sans TC", "PingFang TC", sans-serif;
+      background: radial-gradient(1200px 600px at 50% 0%, rgba(134,197,255,.12), transparent 60%),
+                  radial-gradient(800px 500px at 90% 20%, rgba(255,204,102,.08), transparent 55%),
+                  var(--bg);
+      color:var(--ink);
+    }
+    .wrap{max-width:980px; margin:0 auto; padding:28px 16px 40px;}
+    .title{font-weight:800; letter-spacing:.04em; font-size:28px; margin:0 0 6px;}
+    .desc{color:var(--muted); line-height:1.6; margin:0 0 18px;}
+
+    .panel{
+      background: rgba(15,26,43,.78);
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:16px;
+      box-shadow: 0 12px 30px rgba(0,0,0,.35);
+    }
+
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:12px;}
+    .userline{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+
+    .tag{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px; border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    button{
+      appearance:none;
+      border:none;
+      background: rgba(134,197,255,.18);
+      color:var(--ink);
+      padding:10px 14px;
+      border-radius:12px;
+      font-weight:800;
+      cursor:pointer;
+      border:1px solid rgba(134,197,255,.25);
+    }
+    button:hover{background: rgba(134,197,255,.25);}
+    button:disabled{opacity:.6; cursor:not-allowed;}
+
+    .ghost{
+      background: transparent;
+      border:1px solid rgba(255,255,255,.14);
+      color:var(--muted);
+      font-weight:700;
+    }
+    .dangerBtn{
+      background: rgba(255,204,102,.18);
+      border:1px solid rgba(255,204,102,.28);
+      color: var(--ink);
+    }
+    .dangerBtn:hover{ background: rgba(255,204,102,.26); }
+
+    .pill{
+      padding:6px 10px;
+      border-radius:999px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.10);
+      color: var(--muted);
+      font-size:12px;
+    }
+
+    .warn{
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(255,204,102,.25);
+      background: rgba(255,204,102,.08);
+      color: rgba(255,204,102,.95);
+      font-size:12px;
+      line-height:1.6;
+      display:none;
+      white-space: pre-wrap;
+    }
+
+    .cards{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:12px;
+      margin-top:14px;
+    }
+    @media (max-width: 880px){ .cards{grid-template-columns: 1fr;} }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:12px;
+      position:relative;
+      overflow:hidden;
+      min-height:240px;
+    }
+    .card h3{margin:0 0 8px; font-size:15px; color:var(--muted); font-weight:700;}
+
+    /* ✅ 兩層 canvas 疊在一起：底圖(圖騰) + 上層刮刮(純白) */
+    .scratchWrap{
+      position:relative;
+      width:100%;
+      aspect-ratio: 16/10;
+      border-radius:14px;
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.06);
+      background:#ffffff; /* 看起來就是白底 */
+      touch-action:none;
+    }
+    canvas{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      display:block;
+    }
+
+    .hint{font-size:12px; color:var(--muted); margin-top:8px;}
+
+    .locked{
+      opacity:.6;
+      pointer-events:none; /* 鎖住就不能刮 */
+      filter: grayscale(.25);
+    }
+
+    .result{
+      margin-top:14px;
+      border-top:1px dashed rgba(255,255,255,.14);
+      padding-top:14px;
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap:12px;
+    }
+    @media (max-width: 880px){ .result{grid-template-columns: 1fr;} }
+
+    .box{
+      background: rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:16px;
+      padding:12px;
+    }
+    .big{font-size:18px; font-weight:900; margin:8px 0 6px;}
+    .small{font-size:12px; color:var(--muted); line-height:1.6;}
+
+    .code{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-weight:900;
+      letter-spacing:.08em;
+      color:#0b1220;
+      background: var(--danger);
+      display:inline-block;
+      padding:8px 10px;
+      border-radius:10px;
+      margin-top:8px;
+    }
+
+    a{ color: var(--accent); text-decoration: none; }
+    a:hover{ text-decoration: underline; }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <h1 class="title">雨山春日納福・刮刮樂</h1>
+    <p class="desc">
+      三關刮刮卡：每一張刮開後才會出現自然印記。<br/>
+      三張印記完全相同 → 雨山同日票<strong>八折</strong>；其餘參與者 → 春節限定電子桌布（隨機 1 款）。
+    </p>
+
+    <div class="panel">
+      <div class="row userline">
+        <span class="tag" id="statusTag">狀態：尚未登入</span>
+        <span class="tag">Gmail 登入・一人一回（跨裝置）</span>
+      </div>
+
+      <div class="row">
+        <button id="loginBtn">使用 Google 登入（Popup）</button>
+        <button id="loginRedirectBtn" class="dangerBtn">登入（Redirect 備用）</button>
+        <button id="logoutBtn" class="ghost" style="display:none;">登出</button>
+        <span class="pill" id="userPill" style="display:none;"></span>
+      </div>
+
+      <div class="warn" id="warnBox"></div>
+
+      <div class="cards locked" id="cards">
+        <div class="card">
+          <h3>第一關｜霧層初開</h3>
+          <div class="scratchWrap">
+            <canvas id="u1" width="800" height="500"></canvas>
+            <canvas id="o1" width="800" height="500"></canvas>
+          </div>
+          <div class="hint">用滑鼠/手指在卡面上刮開。</div>
+        </div>
+
+        <div class="card">
+          <h3>第二關｜山風回響</h3>
+          <div class="scratchWrap">
+            <canvas id="u2" width="800" height="500"></canvas>
+            <canvas id="o2" width="800" height="500"></canvas>
+          </div>
+          <div class="hint">刮到出現圖騰即可。</div>
+        </div>
+
+        <div class="card">
+          <h3>第三關｜福脈相連</h3>
+          <div class="scratchWrap">
+            <canvas id="u3" width="800" height="500"></canvas>
+            <canvas id="o3" width="800" height="500"></canvas>
+          </div>
+          <div class="hint">三關完成後自動判定。</div>
+        </div>
+      </div>
+
+      <div class="result">
+        <div class="box">
+          <div class="tag">你的三枚自然印記</div>
+          <div class="big" id="marks">— / — / —</div>
+          <div class="small" id="explain">登入後開始。刮完三關後才會顯示印記與判定結果。</div>
+        </div>
+        <div class="box">
+          <div class="tag">結果</div>
+          <div class="big" id="resultTitle">尚未登入</div>
+          <div id="reward"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    // ===== Firebase imports (v10) =====
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import {
+      getAuth,
+      GoogleAuthProvider,
+      signInWithPopup,
+      signInWithRedirect,
+      getRedirectResult,
+      signOut,
+      onAuthStateChanged,
+      setPersistence,
+      browserLocalPersistence
+    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      runTransaction,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    // ============================================================
+    // 0) Firebase 設定
+    // ============================================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyDlXI9UVwW-O_Le_YC0JnkiSWxaHX1nKMg",
+      authDomain: "yushan-32a96.firebaseapp.com",
+      projectId: "yushan-32a96",
+      storageBucket: "yushan-32a96.firebasestorage.app",
+      messagingSenderId: "217432307296",
+      appId: "1:217432307296:web:81ccf752166e6adef23505",
+      measurementId: "G-7JKHSGLC20"
+    };
+
+    // ============================================================
+    // 1) 活動設定
+    // ============================================================
+    const MAX_WINNERS = 50;
+    const REVEAL_THRESHOLD = 0.55;
+    const DISCOUNT_CODE = "YUSHAN-20OFF";
+
+    const ICONS = [
+      { key:"mountain", label:"山", src:"icons/mountain.png" },
+      { key:"rain",     label:"雨", src:"icons/rain.png" },
+      { key:"fog",      label:"霧", src:"icons/fog.png" },
+      { key:"wind",     label:"風", src:"icons/wind.png" },
+      { key:"leaf",     label:"葉", src:"icons/leaf.png" },
+      { key:"cloud",    label:"雲", src:"icons/cloud.png" },
+    ];
+
+    const WALLPAPERS = [
+      { id:"W1", label:"春日桌布 01", url:"wallpapers/w1.png" },
+      { id:"W2", label:"春日桌布 02", url:"wallpapers/w2.png" },
+      { id:"W3", label:"春日桌布 03", url:"wallpapers/w3.png" },
+    ];
+
+    // ============================================================
+    // 2) DOM
+    // ============================================================
+    const cardsWrap = document.getElementById("cards");
+    const statusTag = document.getElementById("statusTag");
+    const marksEl = document.getElementById("marks");
+    const resultTitle = document.getElementById("resultTitle");
+    const rewardEl = document.getElementById("reward");
+    const explainEl = document.getElementById("explain");
+
+    const loginBtn = document.getElementById("loginBtn");
+    const loginRedirectBtn = document.getElementById("loginRedirectBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const userPill = document.getElementById("userPill");
+    const warnBox = document.getElementById("warnBox");
+
+    const u1 = document.getElementById("u1");
+    const u2 = document.getElementById("u2");
+    const u3 = document.getElementById("u3");
+    const o1 = document.getElementById("o1");
+    const o2 = document.getElementById("o2");
+    const o3 = document.getElementById("o3");
+
+    // ============================================================
+    // 3) UI 小工具
+    // ============================================================
+    function showWarn(text){
+      warnBox.style.display = "block";
+      warnBox.textContent = text;
+    }
+    function clearWarn(){
+      warnBox.style.display = "none";
+      warnBox.textContent = "";
+    }
+
+    function lockAll(msg){
+      statusTag.textContent = `狀態：${msg}`;
+      cardsWrap.classList.add("locked");
+    }
+    function unlockAll(msg){
+      statusTag.textContent = `狀態：${msg}`;
+      cardsWrap.classList.remove("locked");
+    }
+
+    function setResultUI_NotLoggedIn(){
+      marksEl.textContent = "— / — / —";
+      resultTitle.textContent = "尚未登入";
+      rewardEl.innerHTML = `<div class="small">請先使用 Google 登入後開始。</div>`;
+      explainEl.textContent = "登入後開始。刮完三關後才會顯示印記與判定結果。";
+    }
+
+    function showAuthError(e){
+      const code = e?.code || "（無 code）";
+      const msg = e?.message || String(e);
+      let hint = "";
+      if (code === "auth/unauthorized-domain") {
+        hint = "解法：Firebase → Authentication → Settings → Authorized domains 加 localhost / 127.0.0.1";
+      } else if (code === "auth/operation-not-allowed") {
+        hint = "解法：Firebase → Authentication → Sign-in method → Google → Enable";
+      } else if (code === "auth/popup-blocked") {
+        hint = "解法：瀏覽器擋 popup，改用 Redirect 登入按鈕或允許彈窗。";
+      }
+      showWarn(`登入失敗：${code}\n${msg}\n\n${hint}`);
+    }
+
+    // ============================================================
+    // 4) 初始化 Firebase
+    // ============================================================
+    let app, auth, db;
+    try{
+      app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      db = getFirestore(app);
+      try { await setPersistence(auth, browserLocalPersistence); } catch {}
+    }catch(e){
+      console.error(e);
+      lockAll("Firebase 初始化失敗（請看 Console）");
+      showWarn("Firebase 初始化失敗。請用 Chrome：右上角⋮ → 更多工具 → 開發人員工具 → Console 看紅字。");
+    }
+
+    if (location.protocol === "file:") {
+      showWarn("⚠️ 你現在用 file:// 開。\n請用 http://localhost（Live Server / 本機伺服器）才能 Google 登入。");
+    }
+
+    // ============================================================
+    // 5) 圖像繪製（底圖）+ 刮刮遮罩（上層）
+    // ============================================================
+    function randInt(n){ return Math.floor(Math.random() * n); }
+    function pickIcon(){ return ICONS[randInt(ICONS.length)]; }
+
+    function loadImage(src){
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error("Image load failed: " + src));
+        // 加上 cache-bust，避免你替換圖但瀏覽器用舊快取
+        img.src = src + "?v=" + Date.now();
+      });
+    }
+
+    async function setUnder(underCanvas, fallbackLabel, icon){
+      const ctx = underCanvas.getContext("2d");
+      const w = underCanvas.width, h = underCanvas.height;
+      ctx.clearRect(0,0,w,h);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0,0,w,h);
+
+      try{
+        const img = await loadImage(icon.src);
+        const pad = 90;
+        const bw = w - pad*2;
+        const bh = h - pad*2;
+        const ratio = Math.min(bw/img.width, bh/img.height);
+        const iw = img.width * ratio;
+        const ih = img.height * ratio;
+        const ix = (w - iw)/2;
+        const iy = (h - ih)/2;
+
+        ctx.globalAlpha = 1;
+        ctx.drawImage(img, ix, iy, iw, ih);
+      }catch(err){
+        console.warn(err);
+        ctx.fillStyle = "rgba(15,26,43,.55)";
+        ctx.font = "900 120px system-ui, -apple-system, 'Noto Sans TC', sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(fallbackLabel, w/2, h/2);
+      }
+    }
+
+    function paintOverlay(overlayCanvas){
+      const ctx = overlayCanvas.getContext("2d", { willReadFrequently:true });
+      const w = overlayCanvas.width, h = overlayCanvas.height;
+
+      ctx.save();
+      ctx.globalCompositeOperation = "source-over";
+
+      // ✅ 關鍵：100% 不透明白色（完全不透到底圖）
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0,0,w,h);
+
+      ctx.fillStyle = "rgba(15,26,43,0.70)";
+      ctx.font = "900 44px system-ui, -apple-system, 'Noto Sans TC', sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("刮開此處", w/2, h/2);
+
+      ctx.restore();
+    }
+
+    class ScratchOverlay{
+      constructor(overlayCanvas){
+        this.c = overlayCanvas;
+        this.ctx = overlayCanvas.getContext("2d", { willReadFrequently:true });
+        this.isDone = false;
+        this.down = false;
+        this.brush = 34;
+
+        paintOverlay(this.c);
+        this.bind();
+      }
+
+      bind(){
+        const c = this.c;
+        const getPos = (e) => {
+          const rect = c.getBoundingClientRect();
+          const x = (e.clientX - rect.left) * (c.width / rect.width);
+          const y = (e.clientY - rect.top)  * (c.height / rect.height);
+          return {x,y};
+        };
+
+        const scratchAt = (x,y) => {
+          if (this.isDone) return;
+          const ctx = this.ctx;
+          ctx.save();
+          ctx.globalCompositeOperation = "destination-out";
+          ctx.beginPath();
+          ctx.arc(x, y, this.brush, 0, Math.PI*2);
+          ctx.fill();
+          ctx.restore();
+        };
+
+        c.addEventListener("pointerdown", (e) => {
+          e.preventDefault();
+          this.down = true;
+          c.setPointerCapture(e.pointerId);
+          const {x,y} = getPos(e);
+          scratchAt(x,y);
+        });
+
+        c.addEventListener("pointermove", (e) => {
+          if (!this.down) return;
+          e.preventDefault();
+          const {x,y} = getPos(e);
+          scratchAt(x,y);
+        });
+
+        c.addEventListener("pointerup", (e) => {
+          if (!this.down) return;
+          e.preventDefault();
+          this.down = false;
+          this.checkDone();
+        });
+
+        c.addEventListener("pointercancel", () => {
+          this.down = false;
+        });
+      }
+
+      checkDone(){
+        const w = this.c.width, h = this.c.height;
+        const data = this.ctx.getImageData(0,0,w,h).data;
+
+        let cleared = 0;
+        const total = w*h;
+        for(let i=3;i<data.length;i+=4){
+          if (data[i] < 10) cleared++;
+        }
+        if (cleared/total >= REVEAL_THRESHOLD){
+          this.isDone = true;
+        }
+      }
+    }
+
+    function generateMarks(){
+      // 你可以調整「三個一樣」的機率；真正名額限制仍在 Firestore
+      const winRate = 0.10;
+      const isWin = Math.random() < winRate;
+      if(isWin){
+        const icon = pickIcon();
+        return [icon, icon, icon];
+      }
+      let a = pickIcon(), b = pickIcon(), c = pickIcon();
+      while (a.key === b.key && b.key === c.key) {
+        b = pickIcon(); c = pickIcon();
+      }
+      return [a,b,c];
+    }
+
+    // ============================================================
+    // 6) Firestore：一人一次 + 名額（交易）
+    // ============================================================
+    async function finalizeWithServer({ user, marks }){
+      const playRef = doc(db, "plays", user.uid);
+      const campaignRef = doc(db, "meta", "campaign");
+
+      const isWinByMarks = (marks[0].key === marks[1].key && marks[1].key === marks[2].key);
+
+      const out = await runTransaction(db, async (tx) => {
+        const playSnap = await tx.get(playRef);
+        if (playSnap.exists()) return { alreadyPlayed: true, ...playSnap.data() };
+
+        const campSnap = await tx.get(campaignRef);
+        const winnerCount = campSnap.exists() ? (campSnap.data().winnerCount || 0) : 0;
+
+        let result = "LOSE";
+        let winnerGranted = false;
+        let discountCode = null;
+        let wallpaperId = null;
+
+        if (isWinByMarks && winnerCount < MAX_WINNERS) {
+          result = "WIN";
+          winnerGranted = true;
+          discountCode = DISCOUNT_CODE;
+          tx.set(campaignRef, { winnerCount: winnerCount + 1 }, { merge: true });
+        } else {
+          wallpaperId = WALLPAPERS[Math.floor(Math.random() * WALLPAPERS.length)].id;
+        }
+
+        const payload = {
+          email: user.email || null,
+          playedAt: serverTimestamp(),
+          result,
+          winnerGranted,
+          discountCode,
+          wallpaperId,
+          markKeys: marks.map(m => m.key),
+        };
+
+        tx.set(playRef, payload);
+        return { alreadyPlayed: false, ...payload };
+      });
+
+      return out;
+    }
+
+    function renderResultFromPlayDoc(playDocData){
+      const markLabels = (playDocData.markKeys || []).map(k => (ICONS.find(i=>i.key===k)?.label || "—"));
+      marksEl.textContent = (markLabels.length === 3) ? `${markLabels[0]} / ${markLabels[1]} / ${markLabels[2]}` : "— / — / —";
+
+      // 如果你想「完全不顯示自然印記」：把上一行 marksEl.textContent 改成固定 "— / — / —" 即可。
+
+      if (playDocData.result === "WIN" && playDocData.winnerGranted) {
+        resultTitle.textContent = "🎉 福脈相合｜八折";
+        explainEl.textContent = "三關印記完全相同，雨山回應你的福氣。";
+        rewardEl.innerHTML = `
+          <div class="small">你的折扣碼：</div>
+          <div class="code">${playDocData.discountCode || DISCOUNT_CODE}</div>
+          <div class="small">（請截圖私訊官方帳號領取）</div>
+        `;
+      } else {
+        resultTitle.textContent = "🌿 春日納福｜參與禮";
+        explainEl.textContent = "雖未相合（或名額已滿），但山風仍為你而來。";
+
+        const wp = WALLPAPERS.find(w => w.id === playDocData.wallpaperId) || WALLPAPERS[0];
+        rewardEl.innerHTML = `
+          <div class="small">你已獲得：雨山春節限定電子桌布（隨機 1 款）</div>
+          <div class="small" style="margin-top:8px;">
+            <a href="${wp.url}" download>下載：${wp.label}</a>
+          </div>
+        `;
+      }
+    }
+
+    // ============================================================
+    // 7) 主遊戲流程
+    // ============================================================
+    let marks = null;
+    let overlays = [];
+    let pollTimer = null;
+
+    async function startGame(user){
+      clearWarn();
+      unlockAll("進行中（刮完三關自動判定）");
+
+      marksEl.textContent = "— / — / —";
+      resultTitle.textContent = "尚未完成";
+      rewardEl.innerHTML = "";
+      explainEl.textContent = "刮完三關後才會顯示印記與判定結果。";
+
+      marks = generateMarks();
+
+      // 底圖先畫好（但上層遮罩純白，完全不會透）
+      await setUnder(u1, "1", marks[0]);
+      await setUnder(u2, "2", marks[1]);
+      await setUnder(u3, "3", marks[2]);
+
+      // 上層遮罩重畫（純白 + 刮開此處）
+      paintOverlay(o1);
+      paintOverlay(o2);
+      paintOverlay(o3);
+
+      overlays = [
+        new ScratchOverlay(o1),
+        new ScratchOverlay(o2),
+        new ScratchOverlay(o3),
+      ];
+
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(async () => {
+        const doneCount = overlays.filter(o => o.isDone).length;
+        statusTag.textContent = `狀態：已完成 ${doneCount}/3`;
+
+        if (doneCount === 3){
+          clearInterval(pollTimer);
+
+          // ✅ 刮完才顯示自然印記
+          marksEl.textContent = `${marks[0].label} / ${marks[1].label} / ${marks[2].label}`;
+
+          await finalizeAndLock(user);
+        }
+      }, 250);
+    }
+
+    async function finalizeAndLock(user){
+      statusTag.textContent = "狀態：結算中…";
+      cardsWrap.classList.add("locked");
+
+      let out;
+      try{
+        out = await finalizeWithServer({ user, marks });
+      }catch(err){
+        console.error(err);
+        statusTag.textContent = "狀態：發生錯誤（請重新整理再試）";
+        resultTitle.textContent = "⚠️ 錯誤";
+        rewardEl.innerHTML = `<div class="small">後端寫入失敗：${err?.message || err}</div>`;
+
+        showWarn(
+          "Firestore 失敗（常見原因）：\n" +
+          "1) Firestore Database 尚未建立（Firebase → Build → Firestore Database → Create）。\n" +
+          "2) Rules 擋住（permission-denied）。\n" +
+          "3) Cloud Firestore API 尚未啟用（依 Console 的連結啟用）。"
+        );
+        return;
+      }
+
+      if (out.alreadyPlayed){
+        lockAll("你已完成本次試煉（Gmail 一人一回）");
+        renderResultFromPlayDoc(out);
+        return;
+      }
+
+      lockAll("已完成（Gmail 一人一回）");
+      renderResultFromPlayDoc(out);
+    }
+
+    // ============================================================
+    // 8) Firestore 讀取 timeout（避免你覺得卡超久）
+    // ============================================================
+    function withTimeout(promise, ms){
+      return new Promise((resolve, reject) => {
+        const t = setTimeout(() => reject(new Error("讀取 plays 逾時")), ms);
+        promise.then(v => { clearTimeout(t); resolve(v); })
+               .catch(e => { clearTimeout(t); reject(e); });
+      });
+    }
+
+    async function applyMarksToBoardFromKeys(markKeys){
+      const icons = (markKeys || []).map(k => ICONS.find(i => i.key === k)).filter(Boolean);
+      if (icons.length !== 3) return;
+      await setUnder(u1, "1", icons[0]);
+      await setUnder(u2, "2", icons[1]);
+      await setUnder(u3, "3", icons[2]);
+      // 已玩過狀態，不需要刮，所以遮罩不必重建（維持灰鎖住即可）
+    }
+
+    // ============================================================
+    // 9) 登入/登出
+    // ============================================================
+    loginBtn.addEventListener("click", async () => {
+      clearWarn();
+      loginBtn.disabled = true;
+      try {
+        const provider = new GoogleAuthProvider();
+        await signInWithPopup(auth, provider);
+      } catch (e) {
+        console.error(e);
+        showAuthError(e);
+      } finally {
+        loginBtn.disabled = false;
+      }
+    });
+
+    loginRedirectBtn.addEventListener("click", async () => {
+      clearWarn();
+      loginRedirectBtn.disabled = true;
+      try {
+        const provider = new GoogleAuthProvider();
+        await signInWithRedirect(auth, provider);
+      } catch (e) {
+        console.error(e);
+        showAuthError(e);
+        loginRedirectBtn.disabled = false;
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      clearWarn();
+      try { await signOut(auth); }
+      catch (e) { console.error(e); showWarn("登出失敗：" + (e?.message || e)); }
+    });
+
+    // Redirect 回來要接結果
+    try { await getRedirectResult(auth); } catch(e) { if(e) showAuthError(e); }
+
+    // ============================================================
+    // 10) 監聽登入狀態：先顯示已登入，再慢慢讀 Firestore
+    // ============================================================
+    onAuthStateChanged(auth, async (user) => {
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+
+      if (!user){
+        loginBtn.style.display = "";
+        loginRedirectBtn.style.display = "";
+        logoutBtn.style.display = "none";
+        userPill.style.display = "none";
+        userPill.textContent = "";
+
+        lockAll("尚未登入");
+        setResultUI_NotLoggedIn();
+
+        // 畫面先清成白卡（避免殘影）
+        const clearCanvas = (c) => {
+          const ctx = c.getContext("2d");
+          ctx.clearRect(0,0,c.width,c.height);
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0,0,c.width,c.height);
+        };
+        [u1,u2,u3,o1,o2,o3].forEach(clearCanvas);
+        return;
+      }
+
+      // ✅ 先立刻顯示已登入（不等 Firestore）
+      loginBtn.style.display = "none";
+      loginRedirectBtn.style.display = "none";
+      logoutBtn.style.display = "";
+      userPill.style.display = "";
+      userPill.textContent = user.email ? `已登入：${user.email}` : "已登入";
+      statusTag.textContent = "狀態：已登入（讀取資料中…）";
+      clearWarn();
+
+      // 讀 plays：用 timeout 避免卡太久
+      try{
+        const playRef = doc(db, "plays", user.uid);
+        const snap = await withTimeout(getDoc(playRef), 6000);
+
+        if (snap.exists()){
+          const data = snap.data();
+          await applyMarksToBoardFromKeys(data.markKeys);
+          lockAll("你已完成本次試煉（Gmail 一人一回）");
+          renderResultFromPlayDoc(data);
+          return;
+        }
+      }catch(err){
+        console.error(err);
+        // 讀不到 plays 的話：仍然讓你能玩（體感更快）
+        showWarn(
+          "提醒：目前讀取 Firestore 有問題（可能是 Rules / API / 權限）。\n" +
+          "我先讓你可以刮刮測試；若要正式一人一回，需要把 Firestore 權限修好。\n\n" +
+          "錯誤：" + (err?.message || err)
+        );
+      }
+
+      await startGame(user);
+    });
+
+    // 初始鎖住
+    lockAll("尚未登入");
+    setResultUI_NotLoggedIn();
+  </script>
+</body>
+</html>
